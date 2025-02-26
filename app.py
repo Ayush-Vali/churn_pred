@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 import json
-
+import os 
 
 ### Load model
 # from xgboost import XGBClassifier
@@ -318,4 +318,4 @@ def prediction():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000, debug=True)
