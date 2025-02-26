@@ -11,12 +11,16 @@ import os
 # model = XGBClassifier()
 # model.load_model('model.json')  # incompatabile
 
-model = xgb.Booster()
-model.load_model('model.json')
-
 # import pickle
 # model = pickle.load(open('xgboost_model.pkl', 'rb'))
 
+model = xgb.Booster()
+# model.load_model('model.json')
+
+model_path = os.path.join(os.getcwd(), 'model.json')
+feature_names_path = os.path.join(os.getcwd(), 'feature_names.json')
+
+model.load_model(model_path)
 
 
 with open('feature_names.json', 'r') as f:
