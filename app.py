@@ -13,9 +13,9 @@ model = pickle.load(open('xgboost_model.pkl', 'rb'))
 # model.load_model("model.txt")
 
 #getting feature name
-feature_names_path = os.path.join(os.getcwd(), 'feature_names.json')
-with open('feature_names.json', 'r') as f:
-    feature_names = json.load(f)
+# feature_names_path = os.path.join(os.getcwd(), 'feature_names.json')
+# with open('feature_names.json', 'r') as f:
+#     feature_names = json.load(f)
 
 app = Flask(__name__)
 
@@ -280,10 +280,10 @@ def prediction():
         df = pd.DataFrame.from_dict(data)
 
         
-        # cols = model.feature_names
-        # df = df[cols]
+        cols = model.get_booster().feature_names
+        df = df[cols]
 # Or
-        df = df[feature_names]  # so to call features names in order as when the model was created
+        # df = df[feature_names]  # so to call features names in order as when the model was created
         
         # Predict the churn risk using the trained model
         prediction = model.predict(df)
