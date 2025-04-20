@@ -1,28 +1,19 @@
-from flask import Flask, render_template, request
-from markupsafe import escape
+# save this as app.py
+from flask import Flask, escape, request, render_template
 import numpy as np
-import pandas as pd
 import xgboost as xgb
 import json
-import os 
+import os
 
-### Load model
-# from xgboost import XGBClassifier
-# model = XGBClassifier()
-# model.load_model('model.json')  # incompatabile
+# Load the trained XGBoost model
+import pickle
+model = pickle.load(open('xgboost_model.pkl', 'rb'))
 
-# import pickle
-# model = pickle.load(open('xgboost_model.pkl', 'rb'))
+# model = xgb.Booster()
+# model.load_model("model.txt")
 
-model = xgb.Booster()
-# model.load_model('model.json')
-
-model_path = os.path.join(os.getcwd(), 'model.json')
+#getting feature name
 feature_names_path = os.path.join(os.getcwd(), 'feature_names.json')
-
-model.load_model(model_path)
-
-
 with open('feature_names.json', 'r') as f:
     feature_names = json.load(f)
 
@@ -36,10 +27,12 @@ def home():
 def analysis():
     return render_template("churn.html")
 
-
 @app.route('/prediction', methods=['GET', 'POST'])
+
+
+
 def prediction():
-    if request.method == "POST":  # form id /nonselection ones
+    if request.method == "POST":
         age=int(request.form['age'])
         last_login=int(request.form['last_login'])
         avg_time_spent=float(request.form['avg_time_spent'])
@@ -59,7 +52,7 @@ def prediction():
         past_complaint=request.form['past_complaint']
         feedback=request.form['feedback']
 
-# gender
+        # gender
         if gender=="M":
             gender_M = 1
             gender_Unknown = 0
@@ -269,7 +262,7 @@ def prediction():
             feedback_Quality_Customer_Care=0
             feedback_Reasonable_Price=0
             feedback_Too_many_ads=0
-            feedback_User_Friendly_Website=0    
+            feedback_User_Friendly_Website=0
 
         date2 = date.split('-')
         joining_day=int(date2[0])
@@ -283,43 +276,25 @@ def prediction():
 
         data = {'age':[age], 'days_since_last_login':[last_login], 'avg_time_spent':[avg_time_spent], 'avg_transaction_value':[avg_transaction_value], 'points_in_wallet':[points_in_wallet], 'joining_day':[joining_day], 'joining_month':[joining_month], 'joining_year':[joining_year], 'last_visit_time_hour':[last_visit_time_hour], 'last_visit_time_minutes':[last_visit_time_minutes], 'last_visit_time_seconds':[last_visit_time_seconds], 'gender_M':[gender_M], 'gender_Unknown':[gender_Unknown], 'region_category_Town':[region_category_Town], 'region_category_Village':[region_category_Village], 'membership_category_Gold Membership':[membership_category_Gold], 'membership_category_No Membership':[membership_category_No], 'membership_category_Platinum Membership':[membership_category_Platinum], 'membership_category_Premium Membership':[membership_category_Premium], 'membership_category_Silver Membership':[membership_category_Silver], 'joined_through_referral_No':[joined_through_referral_No], 'joined_through_referral_Yes':[joined_through_referral_Yes], 'preferred_offer_types_Gift Vouchers/Coupons':[preferred_offer_types_Gift_VouchersCoupons], 'preferred_offer_types_Without Offers':[preferred_offer_types_Without_Offers], 'medium_of_operation_Both':[medium_of_operation_Both], 'medium_of_operation_Desktop':[medium_of_operation_Desktop], 'medium_of_operation_Smartphone':[medium_of_operation_Smartphone], 'internet_option_Mobile_Data':[internet_option_Mobile_Data], 'internet_option_Wi-Fi':[internet_option_Wi_Fi], 'used_special_discount_Yes':[used_special_discount_Yes], 'offer_application_preference_Yes':[offer_application_preference_Yes], 'past_complaint_Yes':[past_complaint_Yes], 'feedback_Poor Customer Service':[feedback_Customer], 'feedback_Poor Product Quality':[feedback_Poor_Product_Quality], 'feedback_Poor Website':[feedback_Poor_Website], 'feedback_Products always in Stock':[feedback_Products_always_in_Stock], 'feedback_Quality Customer Care':[feedback_Quality_Customer_Care], 'feedback_Reasonable Price':[feedback_Reasonable_Price], 'feedback_Too many ads':[feedback_Too_many_ads], 'feedback_User Friendly Website':[feedback_User_Friendly_Website]}
 
+        import pandas as pd
         df = pd.DataFrame.from_dict(data)
 
-        ### align with the features used in training
         
         # cols = model.feature_names
         # df = df[cols]
-#or
+# Or
+        df = df[feature_names]  # so to call features names in order as when the model was created
         
-        df = df[feature_names]    
+        # Predict the churn risk using the trained model
+        prediction = model.predict(df)
 
 
-        ### prediction model loaded
-
-        # prediction = model.predict(df)
-        dmatrix = xgb.DMatrix(data=df)
-        prediction = model.predict(dmatrix)
-        print(prediction)
-
-
-        # return prediction text
-
-        
-        churn_probability = prediction[0][1]  # Adjust based on your class ordering
-
-        # Convert the probability into a churn score (1 to 5 scale)
-        churn_score = round(churn_probability * 5)  # Scale from 0 to 1 to 1 to 5
-
-        # Displaying the results
-        return render_template("prediction.html", prediction_text="Churn Score is {}".format(churn_score))
-
-        # return render_template("prediction.html", prediction_text="Churn Score is {}".format(prediction))        
+        # Display the result on the prediction page 
+        return render_template("prediction.html", prediction_text="Churn Score is {}".format(prediction))        
 
     else:
         return render_template("prediction.html")
 
 
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=True)
+    app.run(debug=True)
